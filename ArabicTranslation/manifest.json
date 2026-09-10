@@ -1,0 +1,9 @@
+{
+  "filename": "ArabicTranslation.dll",
+  "author": "IHB",
+  "name": "Outer Wilds Arabic Translation",
+  "uniqueName": "arabic.OWArabicTranslation",
+  "version": "1.0.0",
+  "owmlVersion": "2.9.0",
+  "dependencies": ["xen.LocalizationUtility"]
+}

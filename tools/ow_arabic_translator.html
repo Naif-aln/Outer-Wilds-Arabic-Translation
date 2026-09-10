@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OW Arabic — Review & Edit</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body { background:#0d0f14; color:#d4c9b0; font-family:'IBM Plex Mono',monospace; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+  /* TOP BAR */
+  #topbar { background:#13151c; border-bottom:1px solid #2a2d38; padding:8px 16px; display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; }
+  #topbar h1 { font-size:13px; color:#e8b96a; white-space:nowrap; }
+  .tbtn { background:#1e2029; border:1px solid #2a2d38; color:#d4c9b0; font-family:'IBM Plex Mono',monospace; font-size:11px; padding:5px 12px; border-radius:5px; cursor:pointer; white-space:nowrap; }
+  .tbtn:hover { border-color:#e8b96a; color:#e8b96a; }
+  .tbtn.save { background:#e8b96a; color:#0d0f14; border-color:#e8b96a; font-weight:700; }
+  .tbtn.save:hover { background:#f0cb80; }
+  #searchInput { flex:1; background:#1e2029; border:1px solid #2a2d38; color:#d4c9b0; font-family:'IBM Plex Mono',monospace; font-size:12px; padding:6px 12px; border-radius:5px; outline:none; min-width:120px; }
+  #searchInput:focus { border-color:#6ab4e8; }
+  #stats { font-size:11px; color:#6b7080; white-space:nowrap; }
+  #stats span { color:#e8b96a; }
+
+  /* SECTION TABS */
+  #sectionBar { background:#0f1118; border-bottom:1px solid #2a2d38; padding:0 16px; display:flex; flex-shrink:0; }
+  .stab { font-size:11px; padding:8px 18px; cursor:pointer; border-bottom:2px solid transparent; color:#4a4d5a; user-select:none; white-space:nowrap; }
+  .stab:hover { color:#d4c9b0; }
+  .stab.active { color:#e8b96a; border-bottom-color:#e8b96a; }
+  .stab .cnt { background:#1e2029; border-radius:8px; padding:1px 6px; font-size:9px; margin-left:6px; color:#6b7080; }
+  .stab.active .cnt { color:#e8b96a; }
+
+  /* FILTERS */
+  #filters { background:#13151c; border-bottom:1px solid #2a2d38; padding:5px 16px; display:flex; gap:6px; flex-shrink:0; align-items:center; }
+  .ftab { font-size:11px; padding:3px 12px; border-radius:4px; cursor:pointer; border:1px solid transparent; color:#6b7080; user-select:none; }
+  .ftab:hover { color:#d4c9b0; }
+  .ftab.active { background:#1e2029; border-color:#2a2d38; color:#d4c9b0; }
+  #fstats { font-size:10px; color:#333645; margin-left:auto; }
+
+  /* MAIN LAYOUT */
+  #layout { display:flex; flex:1; overflow:hidden; }
+
+  /* LEFT LIST */
+  #list { width:340px; min-width:200px; border-right:1px solid #2a2d38; overflow-y:auto; flex-shrink:0; }
+  #list::-webkit-scrollbar { width:4px; }
+  #list::-webkit-scrollbar-thumb { background:#2a2d38; }
+
+  .row { padding:8px 12px; border-bottom:1px solid #191b22; cursor:pointer; display:flex; align-items:flex-start; gap:8px; border-left:3px solid transparent; }
+  .row:hover { background:#15171e; }
+  .row.sel { background:#1c1f2a; border-left-color:#e8b96a; }
+  .row.done { border-left-color:#4a7a4a; }
+  .row.done.sel { border-left-color:#e8b96a; }
+  .row-num { font-size:10px; color:#2a2d3a; min-width:32px; flex-shrink:0; padding-top:2px; }
+  .row-body { flex:1; min-width:0; }
+  .row-en { font-size:11px; color:#7a7f8e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .row-ar { font-size:12px; color:#d4c9b0; font-family:'Tajawal',sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; direction:rtl; text-align:right; margin-top:2px; }
+  .badge { font-size:9px; padding:2px 5px; border-radius:6px; align-self:center; white-space:nowrap; flex-shrink:0; }
+  .bdone { background:rgba(74,122,74,0.25); color:#6abf6a; }
+  .bpend { background:rgba(80,80,100,0.15); color:#44475a; }
+
+  /* RIGHT EDITOR */
+  #editor { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  #edScroll { flex:1; padding:20px 24px; display:flex; flex-direction:column; gap:0; overflow-y:auto; }
+  #edScroll::-webkit-scrollbar { width:4px; }
+  #edScroll::-webkit-scrollbar-thumb { background:#2a2d38; }
+
+  #nosel { flex:1; display:flex; align-items:center; justify-content:center; color:#2a2d3a; font-size:13px; text-align:center; line-height:2.5; }
+
+  /* SIDE BY SIDE COMPARE */
+  #compare { display:none; flex-direction:column; gap:0; flex:1; }
+
+  .compare-row { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:#2a2d38; border-radius:0; }
+  .compare-row:first-child { border-radius:8px 8px 0 0; }
+  .compare-row:last-child { border-radius:0 0 8px 8px; margin-bottom:0; }
+
+  .col-en, .col-ar { padding:14px 16px; background:#13151c; }
+  .col-en { border-radius:8px 0 0 0; }
+  .col-ar { border-radius:0 8px 0 0; }
+
+  .col-label { font-size:10px; color:#44475a; text-transform:uppercase; letter-spacing:2px; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+  .col-label .badge2 { font-size:9px; padding:1px 7px; border-radius:8px; }
+  .lbl-en { background:rgba(106,180,232,0.15); color:#6ab4e8; border:1px solid rgba(106,180,232,0.2); }
+  .lbl-ar { background:rgba(232,185,106,0.15); color:#e8b96a; border:1px solid rgba(232,185,106,0.2); }
+
+  .en-text { font-size:13px; color:#8a8f9e; line-height:1.75; white-space:pre-wrap; word-break:break-word; font-family:'IBM Plex Mono',monospace; }
+  .ctag { color:#6ab4e8; }
+
+  .ar-textarea { font-size:15px; color:#e8e0cc; line-height:1.8; direction:rtl; font-family:'Tajawal',sans-serif; resize:none; outline:none; width:100%; min-height:80px; background:transparent; border:none; transition:background 0.2s; padding:2px 4px; border-radius:4px; }
+  .ar-textarea:focus { background:rgba(232,185,106,0.04); }
+
+  /* ENTRY INFO BAR */
+  #infobar { background:#0f1118; border-top:1px solid #1a1c24; border-bottom:1px solid #2a2d38; padding:6px 24px; display:none; align-items:center; gap:12px; flex-shrink:0; }
+  #entrynum { font-size:11px; color:#44475a; }
+  #section-badge { font-size:9px; padding:2px 8px; border-radius:8px; background:#1e2029; color:#6b7080; border:1px solid #2a2d38; }
+
+  /* FOOTER */
+  #footer { display:none; gap:10px; align-items:center; padding:10px 24px; border-top:1px solid #2a2d38; background:#0d0f14; flex-shrink:0; }
+  #counter { font-size:11px; color:#44475a; flex:1; }
+  .hint { font-size:10px; color:#333645; }
+  kbd { background:#1e2029; border:1px solid #2a2d38; border-radius:3px; padding:1px 5px; font-size:9px; }
+
+  /* DROP */
+  #drop { position:fixed; inset:0; background:#0d0f14; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
+  #drop h2 { color:#e8b96a; font-size:20px; }
+  #drop p { color:#6b7080; font-size:13px; }
+  #dz { border:2px dashed #2a2d38; border-radius:12px; padding:44px 70px; text-align:center; cursor:pointer; transition:all 0.2s; }
+  #dz:hover, #dz.over { border-color:#e8b96a; background:rgba(232,185,106,0.04); }
+  #dz .di { font-size:44px; margin-bottom:10px; }
+
+  #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(60px); background:#1e2029; border:1px solid #e8b96a; color:#e8b96a; padding:8px 18px; border-radius:6px; font-size:12px; transition:transform 0.25s; pointer-events:none; z-index:200; }
+  #toast.show { transform:translateX(-50%) translateY(0); }
+  .empty { padding:40px 20px; text-align:center; color:#2a2d3a; font-size:12px; line-height:2; }
+</style>
+</head>
+<body>
+
+<div id="drop">
+  <h2>🌌 OW Arabic — Review & Edit</h2>
+  <p>Load your Translation_Arabic.xml</p>
+  <div id="dz" onclick="document.getElementById('fin').click()">
+    <div class="di">📄</div>
+    <p style="color:#d4c9b0;margin-bottom:6px;">Drag Translation_Arabic.xml here</p>
+    <p style="color:#44475a;font-size:11px;margin-bottom:14px;">or click to browse</p>
+    <button class="tbtn save" onclick="event.stopPropagation();document.getElementById('fin').click()">Choose File</button>
+  </div>
+  <input type="file" id="fin" accept=".xml" style="display:none">
+</div>
+
+<div id="topbar">
+  <h1>🌌 OW Arabic Review</h1>
+  <button class="tbtn save" id="saveXml">💾 Save XML</button>
+  <button class="tbtn" id="saveJson">📋 Save Progress</button>
+  <button class="tbtn" id="loadJson">📂 Load Progress</button>
+  <input type="file" id="pjson" accept=".json" style="display:none">
+  <input id="searchInput" type="text" placeholder="🔍  Search English or Arabic...">
+  <div id="stats">Done: <span id="doneN">0</span> / <span id="totalN">0</span></div>
+</div>
+
+<div id="sectionBar">
+  <div class="stab active" data-s="dialogue">💬 Dialogue <span class="cnt" id="c-dialogue">0</span></div>
+  <div class="stab" data-s="shipLog">🚀 Ship Log <span class="cnt" id="c-shipLog">0</span></div>
+  <div class="stab" data-s="ui">🖥️ UI / Menus <span class="cnt" id="c-ui">0</span></div>
+</div>
+
+<div id="filters">
+  <div class="ftab active" data-f="all">All</div>
+  <div class="ftab" data-f="pending">Not Translated</div>
+  <div class="ftab" data-f="done">Translated</div>
+  <div id="fstats"></div>
+</div>
+
+<div id="layout">
+  <div id="list"></div>
+  <div id="editor">
+    <div id="infobar">
+      <span id="entrynum"></span>
+      <span id="section-badge"></span>
+    </div>
+    <div id="edScroll">
+      <div id="nosel">← Select any entry to review and edit it<br><span style="font-size:10px;color:#1e2029">English on the left, Arabic on the right</span></div>
+      <div id="compare">
+        <!-- rows injected here -->
+      </div>
+    </div>
+    <div id="footer">
+      <div id="counter"></div>
+      <button class="tbtn" id="prevBtn">← Prev</button>
+      <button class="tbtn save" id="nextBtn">Save &amp; Next →</button>
+      <span class="hint"><kbd>Ctrl+Enter</kbd> Save &amp; Next</span>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────
+let data = { dialogue:[], shipLog:[], ui:[] };
+let section = 'dialogue';
+let filter = 'all';
+let search = '';
+let selKey = null; // {section, idx}
+
+// For UI entries we need English meanings (key is just a number)
+const uiMeanings = {
+  "100":"RESUME EXPEDITION",
+  "101":"NEW EXPEDITION",
+  "102":"QUIT",
+  "103":"PLAYER PROFILE",
+  "104":"OPTIONS",
+  "105":"VIEW CREDITS",
+  "106":"YES",
+  "107":"NO",
+  "108":"PRESET",
+  "109":"Confirm changes?",
+  "110":"CURRENT PROFILE:",
+  "111":"CREATE NEW PROFILE",
+  "112":"DELETE PROFILE",
+  "113":"SWITCH TO",
+  "114":"RESET GAME",
+  "115":"Are you sure? This will delete all progress.",
+  "116":"Are you sure?",
+  "117":"BACK",
+  "118":"Enabled",
+  "119":"Disabled",
+  "120":"GAMEPLAY",
+  "121":"INPUT",
+  "122":"GRAPHICS",
+  "123":"TEXT/AUDIO",
+  "124":"Auto",
+  "125":"Manual",
+  "126":"Show",
+  "127":"Hide",
+  "128":"Settings",
+  "129":"Default Settings",
+  "130":"Fullscreen Mode",
+  "131":"Monitor",
+  "132":"Aspect Ratio",
+  "133":"Resolution",
+  "134":"Anti Aliasing",
+  "135":"Anti Alias Quality",
+  "136":"Image Quality",
+  "137":"Environment Quality",
+  "138":"Foliage Quality",
+  "139":"Shadow Quality",
+  "140":"SSAO Quality",
+  "141":"Gamma",
+  "142":"VSync",
+  "143":"Monitor",
+  "144":"Dithering",
+  "145":"Look Sensitivity",
+  "146":"Custom Resolution",
+  "147":"Confirm changes?",
+  "148":"Loading Mode",
+  "150":"Freeze Time While Translating",
+  "151":"Freeze Time While Reading Ship Log",
+  "152":"Freeze Time While Talking",
+  "153":"Show Rumor Connections",
+  "154":"Autopilot",
+  "155":"Language",
+  "156":"Text Speed",
+  "157":"Master Volume",
+  "158":"Music Volume",
+  "159":"SFX Volume",
+  "160":"Jetpack Auto Boost Mode",
+  "161":"Translator Auto Equip Mode",
+  "162":"Ship Log Rumors",
+  "163":"Ship Log Notifications",
+  "164":"Auto Pilot",
+  "165":"Button Settings",
+  "170":"Text Speed",
+  "171":"Freeze Time While Reading",
+  "172":"Translator",
+  "173":"Ship Log",
+  "174":"Conversations",
+  "175":"Master Volume",
+  "176":"Language",
+  "177":"UI Size",
+  "180":"Keep these settings? Revert in",
+  "181":"seconds...",
+  "182":"second...",
+  "183":"Error: Profile name limit",
+  "184":"characters, cannot match existing profile",
+  "185":"Enter profile name",
+  "186":"Create new profile",
+  "187":"Delete",
+  "188":"Are you sure?",
+  "190":"Invert Player View",
+  "191":"Invert Ship View",
+  "192":"Look Sensitivity",
+  "193":"Look Sensitivity (In Ship)",
+  "194":"Inner Dead Zone",
+  "195":"Outer Dead Zone",
+  "196":"Inverted",
+  "197":"Normal",
+  "198":"Change Buttons",
+  "200":"Hold",
+  "201":"Press",
+  "202":"Match Velocity",
+  "203":"Engage Autopilot",
+  "204":"Target",
+  "205":"Flashlight",
+  "206":"Equip Scout Launcher",
+  "207":"Show Map",
+  "208":"Free Look",
+  "209":"Equip Signalscope",
+  "210":"Unbuckle",
+  "211":"Equip Translator",
+  "212":"Boost Jetpack",
+  "213":"Crouch",
+  "214":"Jump",
+  "215":"Wake Up",
+  "216":"Hold then Release",
+  "217":"Look Around",
+  "218":"Move",
+  "220":"Thrust Up",
+  "221":"Thrust Down",
+  "222":"Thrust Up / Down",
+  "223":"Horizontal Thrust",
+  "224":"Use Jetpack Boost",
+  "225":"Reset",
+  "226":"Roll Thrust",
+  "230":"Put Away",
+  "231":"Aim Cannon",
+  "232":"Launch Scout",
+  "233":"Retrieve Scout",
+  "234":"Photo Mode",
+  "235":"Launch Mode",
+  "236":"Forward Snapshot",
+  "237":"Take Photo",
+  "238":"Rear Snapshot",
+  "239":"Rotate Camera",
+  "240":"Aim Camera",
+  "241":"Remove Photo",
+  "250":"Liftoff",
+  "251":"Engage Autopilot",
+  "252":"Abort Autopilot",
+  "253":"Liftoff / Landing Camera",
+  "254":"Landing Mode",
+  "255":"Cockpit View",
+  "256":"Repair",
+  "257":"Buckle Up",
+  "258":"Raise Eject Cover",
+  "259":"Open Hatch",
+  "260":"View Ship Log",
+  "261":"Eject",
+  "269":"SUIT:",
+  "270":"Leave",
+  "271":"Roast Marshmallow",
+  "272":"Talk",
+  "273":"Talk to",
+  "274":"Activate Lift",
+  "275":"Suit Up",
+  "276":"Use Camera",
+  "277":"Use Scout Launcher",
+  "278":"Fly Model Ship",
+  "279":"Use Satellite Camera",
+  "280":"Enter Launch Codes",
+  "281":"Requires Launch Codes",
+  "282":"Light Campfire",
+  "283":"Return Suit",
+  "284":"Read",
+  "285":"Play Recording",
+  "286":"Repair",
+  "287":"Begin Inflation",
+  "288":"Gather",
+  "289":"Patch Suit Puncture",
+  "290":"Use Medkit and Refuel Jetpack",
+  "291":"Use Medkit, Refuel Jetpack, and Clean Visor",
+  "292":"Use Medkit",
+  "293":"Use Medkit and Clean Visor",
+  "294":"Refuel Jetpack",
+  "295":"Refuel Jetpack and Clean Visor",
+  "296":"Clean Visor",
+  "297":"Health and Fuel Full",
+  "298":"Jetpack Fuel Full",
+  "299":"Health Full",
+  "300":"Close Map",
+  "301":"Pan View",
+  "302":"Rotate View",
+  "303":"Zoom View",
+  "304":"Observe",
+  "310":"Pick Up",
+  "311":"Drop",
+  "312":"Remove",
+  "313":"Insert",
+  "314":"Does Not Fit",
+  "315":"Already Holding",
+  "316":"Explain Stone",
+  "317":"Eye of the universe Stone",
+  "318":"Identify Stone",
+  "319":"Me Stone",
+  "320":"Quantum Moon Stone",
+  "321":"You Stone",
+  "322":"Scroll",
+  "323":"Projection Stone",
+  "324":"Warp Core",
+  "330":"Move Stick",
+  "331":"Rotate Stick",
+  "332":"Extend Stick",
+  "333":"Eat",
+  "334":"Toss",
+  "335":"Put Away",
+  "336":"Extinguish",
+  "337":"Replace",
+  "340":"Aim Translator",
+  "341":"Put Away",
+  "342":"Translate",
+  "343":"Scroll Text",
+  "344":"Page Text",
+  "345":"Too close to target text",
+  "346":"Untranslated Nomai recording",
+  "347":"Untranslated Nomai writing",
+  "350":"Put Away",
+  "351":"Zoom In",
+  "352":"Zoom Level",
+  "353":"Change Frequency",
+  "360":"Leave Ship Log",
+  "361":"Zoom View",
+  "362":"Map Mode",
+  "363":"Find in Map Mode",
+  "364":"View Entry",
+  "365":"Skip",
+  "366":"Remove HUD Marker",
+  "367":"Mark Location On HUD",
+  "368":"View Rumored Entry",
+  "369":"View Rumor",
+  "370":"Back to Map",
+  "371":"View Entries",
+  "372":"Rumor Mode",
+  "373":"Find In Rumor Mode",
+  "374":"No discoveries yet.",
+  "375":"Scroll Text",
+  "380":"Leave Menu",
+  "381":"Swap Tab",
+  "382":"PRESS A TO START",
+  "383":"PRESS",
+  "384":"TO START",
+  "400":"SURFACE INTEGRITY:",
+  "401":"FUEL LEVEL CRITICAL",
+  "402":"% FUEL REMAINING",
+  "403":"VITALS CRITICAL",
+  "404":"VITALS LOW",
+  "405":"SECONDS OXYGEN REMAINING",
+  "406":"MINUTES OXYGEN REMAINING",
+  "410":"FREQUENCY:",
+  "411":"EXIT SHIP TO REPAIR",
+  "412":"HAZARD",
+  "413":"ERROR: DUPLICATE SIGNAL",
+  "414":"MULTIPLE MARKERS",
+  "415":"SHIP LOG UPDATED",
+  "416":"(NEW)",
+  "420":"Launch Codes",
+  "421":"Eye Coordinates:",
+  "430":"WARNING: FUEL DEPLETED - USING OXYGEN AS PROPELLANT",
+  "431":"REFUELING",
+  "432":"HEALING",
+  "433":"HEALING AND REFUELING",
+  "434":"TREES DETECTED - OXYGEN TANK REFILLED",
+  "435":"OXYGEN TANK REFILLED",
+  "436":"SUIT PUNCTURE DETECTED",
+  "440":"FREQUENCY DISCOVERED:",
+  "441":"SIGNAL IDENTIFIED:",
+  "442":"UNABLE TO PINPOINT LOCATION",
+  "443":"CONNECTION WITH SCOUT IS LOST",
+  "444":"RETURNING TO SOLAR SYSTEM",
+  "445":"HEADLIGHTS ON",
+  "446":"HEADLIGHTS OFF",
+  "447":"SCOUT LAUNCH OBSTRUCTED",
+  "450":"SATELLITE NODE",
+  "451":"UPPER HULL",
+  "452":"COCKPIT",
+  "453":"PORT HULL",
+  "454":"LANDING GEAR",
+  "455":"STARBOARD HULL",
+  "456":"AUTOPILOT",
+  "457":"FUEL TANK",
+  "458":"ARTIFICIAL GRAVITY",
+  "459":"HEADLIGHTS",
+  "460":"LANDING CAMERA",
+  "461":"PORT THRUSTER BANK",
+  "462":"ELECTRICAL SYSTEMS",
+  "463":"OXYGEN TANK",
+  "464":"REACTOR",
+  "465":"STARBOARD THRUSTER BANK",
+  "466":"UNKNOWN",
+  "480":"STAGE 1: ALIGNING FLIGHT TRAJECTORY",
+  "481":"STAGE 2: ACCELERATING TOWARD DESTINATION",
+  "482":"STAGE 3: FIRING RETRO-ROCKETS",
+  "483":"MATCHING VELOCITY",
+  "484":"VELOCITY MATCHED",
+  "485":"AUTOPILOT ABORTED",
+  "486":"VELOCITY MATCH ABORTED",
+  "487":"AUTOPILOT ABORTED: TOO CLOSE TO TARGET",
+  "488":"AUTOPILOT COMPLETE: UNDERSHOT TARGET",
+  "489":"AUTOPILOT COMPLETE",
+  "500":"RESUME",
+  "501":"QUIT",
+  "502":"QUIT TO MAIN MENU",
+  "503":"RESET LOOP AND QUIT TO MAIN MENU",
+  "504":"MEDITATE UNTIL NEXT LOOP",
+  "505":"SIGN IN",
+  "506":"RESET TO VESSEL AND QUIT TO MAIN MENU",
+  "510":"PAUSED",
+  "511":"Outer Wilds is best experienced with a game pad...",
+  "520":"Controller disconnected",
+  "521":"Current user signed out",
+  "522":"Enter text...",
+  "523":"USER:",
+  "524":"Profile Management",
+  "525":"Controller disconnected",
+  "526":"Wireless controller disconnected",
+  "550":"Interact",
+  "551":"Jump",
+  "552":"Match Velocity",
+  "553":"Mark Entry",
+  "554":"Cancel",
+  "555":"Signalscope",
+  "556":"Ship Log Mode",
+  "557":"Lock On",
+  "558":"Flashlight",
+  "559":"Roll",
+  "560":"Walk",
+  "561":"Rearview Snapshot",
+  "562":"Scout",
+  "563":"Scope View",
+  "564":"Translate",
+  "565":"Map",
+  "566":"Pause",
+  "567":"Look / Move",
+  "568":"Default",
+  "569":"Southpaw",
+  "570":"Up / Down / Zoom",
+  "571":"Forward",
+  "572":"Backward",
+  "573":"Left",
+  "574":"Right",
+  "575":"Thrust Up",
+  "576":"Thrust Down",
+  "577":"Retrieve Scout",
+  "578":"Change Frequency",
+  "579":"Signalscope Zoom",
+  "580":"Map Zoom",
+  "581":"Ship Log Zoom",
+  "582":"Scout Camera Up / Down",
+  "583":"Scout Camera Left / Right",
+  "584":"Translator Scroll",
+  "585":"Translator Page",
+  "586":"Autopilot",
+  "587":"Ship Log Scroll",
+  "588":"Free Look",
+  "589":"Scout Mode",
+  "600":"Sun Station",
+  "601":"Ash Twin",
+  "602":"Ember Twin",
+  "603":"Hourglass Twins",
+  "604":"Timber Hearth",
+  "605":"Brittle Hollow",
+  "606":"Hollow's Lantern",
+  "607":"Giant's Deep",
+  "608":"Orbital Probe Cannon",
+  "609":"Control Module",
+  "610":"Launch Module",
+  "611":"Probe Tracking Module",
+  "612":"Dark Bramble",
+  "613":"The Interloper",
+  "614":"White Hole",
+  "615":"Quantum Moon",
+  "616":"Sun",
+  "617":"The Attlerock",
+  "618":"The Eye of the universe",
+  "650":"ESCAPE POD 1",
+  "651":"ESCAPE POD 2",
+  "652":"ESCAPE POD 3",
+  "653":"ARKOSE",
+  "654":"GALENA",
+  "655":"TEPHRA",
+  "656":"GROVE SHARD",
+  "657":"MUSEUM SHARD",
+  "658":"TOWER SHARD",
+  "659":"CAVE SHARD",
+  "660":"ISLAND SHARD",
+  "661":"QUANTUM MOON",
+  "662":"CHERT",
+  "663":"ESKER",
+  "664":"FELDSPAR",
+  "665":"GABBRO",
+  "666":"RIEBECK",
+  "667":"SOLANUM",
+  "668":"WHITE HOLE",
+  "669":"WHITE HOLE CORE",
+  "680":"UNIDENTIFIED",
+  "681":"OUTER WILDS VENTURES",
+  "682":"QUANTUM FLUCTUATIONS",
+  "683":"DISTRESS BEACON",
+  "684":"WHITE HOLE",
+  "685":"HIDE AND SEEK",
+  "700":"SUN STATION",
+  "701":"ASH TWIN",
+  "702":"EMBER TWIN",
+  "703":"THE HOURGLASS TWINS",
+  "704":"TIMBER HEARTH",
+  "705":"BRITTLE HOLLOW",
+  "706":"HOLLOW'S LANTERN",
+  "707":"GIANT'S DEEP",
+  "708":"CONTROL MODULE",
+  "709":"LAUNCH MODULE",
+  "710":"PROBE TRACKING MODULE",
+  "711":"DARK BRAMBLE",
+  "712":"THE INTERLOPER",
+  "713":"WHITE HOLE",
+  "714":"QUANTUM MOON",
+  "715":"SUN",
+  "716":"THE ATTLEROCK",
+  "717":"THE EYE OF THE UNIVERSE",
+  "718":"SCOUT",
+  "719":"YOU ARE HERE",
+  "720":"SHIP",
+  "730":"PLANETARY CHART of the OUTER WILDS",
+  "731":"OUTER WILDS VENTURES",
+  "732":"LITTLE SCOUT",
+  "733":"DETECT HAZARDS",
+  "734":"ILLUMINATE DARK AREAS",
+  "735":"SEE BEYOND THE HORIZON",
+  "736":"TEST THE ENVIRONMENT",
+  "737":"PRESENTS",
+  "738":"POSTCARDS FROM ORBIT",
+  "739":"This projector is linked to our Sky Shutter satellite",
+  "740":"The satellite is equipped with two onboard cameras",
+  "800":"Departure Time:",
+  "801":"Arrival Time:",
+  "802":"Return warp status: CHARGED",
+  "810":"YOU ARE DEAD",
+  "811":"YOU DESTROYED THE FABRIC OF SPACETIME",
+  "812":"NOW BEYOND THE REACH OF THE SUPERNOVA...",
+  "813":"HOW LONG HAVE YOU BEEN HERE?",
+  "814":"YOU FIND YOURSELF THE ONLY INHABITANT OF AN ABANDONED WORLD",
+  "815":"HOW MUCH TIME HAS PASSED?",
+  "900":"Middle Screen Reticle",
+  "901":"Heads Up Display",
+  "902":"Vibration",
+  "903":"Button Remapping",
+  "904":"Mouse Smoothing",
+  "905":"HUD Notifications",
+  "906":"Photo Mode",
+  "907":"Music Volume",
+  "908":"SFX Volume",
+  "909":"Target Frame Rate",
+  "910":"Field of View",
+  "911":"Physics Update Rate",
+  "912":"Ship Auto Orientation",
+  "913":"Ship Center of Mass",
+  "914":"Difficulty Modes",
+  "915":"Easy",
+  "916":"Medium",
+  "917":"Hard",
+  "918":"Impact Wobble",
+  "919":"?",
+  "920":"Grappling Hook",
+  "921":"Jump Multiplier",
+  "922":"Invincibility",
+  "923":"Probe Destruction",
+  "924":"Infinite Resources",
+  "925":"Limited Ship Fuel",
+  "926":"Sprint Speed",
+  "927":"FLASHLIGHT",
+  "928":"FLASHLIGHT",
+  "929":"LANDING CAM",
+  "930":"COMPUTER",
+  "931":"SIGNALSCOPE",
+  "932":"GRAVITY",
+  "933":"Launch Tower",
+  "934":"Lumber Mill",
+  "935":"Zero-G Cave",
+  "936":"Observatory",
+  "937":"The quiet shade",
+  "938":"Across old bark",
+  "939":"In the ancient glade",
+  "940":"It's always dark",
+  "941":"FUEL",
+  "942":"TEMP",
+  "943":"O2",
+  "944":"H2O",
+  "945":"MASTER ALARM",
+  "946":"EJECT",
+  "947":"WARNING: USE ONLY IN EMERGENCY",
+  "948":"HUD",
+  "949":"ON",
+  "950":"OFF",
+  "951":"CAUTION",
+  "952":"WARNING",
+  "953":"DAMAGE",
+  "954":"ALTIMETER",
+  "955":"MATCH VELOCITY",
+  "956":"OXYGEN REFILL:",
+  "957":"SPOT A TREE",
+  "958":"WALK TOWARDS IT",
+  "959":"ENJOY!",
+  "960":"Loading...",
+  "961":"UNIDENTIFIED SIGNAL NEARBY",
+  "962":"UNKNOWN",
+  "963":"DANGER: GHOST MATTER DETECTED NEARBY",
+  "964":"LOAD PREVIOUS SAVE",
+  "965":"signed out",
+  "966":"SWITCH PROFILE",
+  "967":"SHIP HULL BREACH DETECTED",
+  "968":"UNABLE TO RETRIEVE SCOUT; TOO MANY TARGETS",
+  "969":"EMERGENCY SCOUT RECALL ACTIVATED",
+  "970":"DAMAGED",
+  "971":"OF 3 REPAIRED",
+  "972":"3 OF 3 REPAIRED - TRAINING SIMULATION COMPLETE",
+  "973":"There's more to explore here.",
+  "974":"UNTRANSLATED TEXT REMAINING",
+  "975":"AFT HULL",
+  "980":"Low",
+  "981":"Medium",
+  "982":"High",
+  "983":"Very High",
+  "984":"Full",
+  "985":"Half",
+  "986":"Quarter",
+  "987":"Eighth",
+  "988":"Invalid",
+  "989":"Slow",
+  "990":"Normal",
+  "991":"Fast",
+  "992":"Instant",
+  "995":"1440p/60fps",
+  "996":"2160p/30fps",
+  "997":"Dynamic/60fps",
+  "998":"1080p/60fps",
+  "999":"1440p/30fps",
+  "1000":"Create Profile",
+  "1001":"Enter Profile Name...",
+  "1002":"Create",
+  "1003":"Cancel And Exit Game",
+  "1004":"Delete the profile",
+  "1005":"?",
+  "1006":"Switch to profile",
+  "1007":"?",
+  "1008":"Switch",
+  "1009":"Last Saved:",
+  "1010":"Please ensure Outer Wilds has write permissions",
+  "1011":"Rebind Controls",
+  "1012":"Control Rebinding",
+  "1013":"Gamepad",
+  "1014":"Keyboard & Mouse",
+  "1015":"Discard and Exit",
+  "1016":"Save and Exit",
+  "1017":"Cancel Rebinding",
+  "1018":"Confirm",
+  "1019":"Map Zoom In",
+  "1020":"Map Zoom Out",
+  "1021":"Move X-Axis",
+  "1022":"Move Y-Axis",
+  "1023":"Look X-Axis",
+  "1024":"Look Y-Axis",
+  "1025":"Launch Scout / Forward Snapshot",
+  "1026":"Scout Rearview Snapshot",
+  "1027":"Tool X-Axis",
+  "1028":"Tool Y-Axis",
+  "1029":"Roll Mode",
+  "1030":"Jetpack Boost",
+  "1031":"Landing Camera",
+  "1032":"Cockpit Free Look",
+  "1033":"Change Ship Log Mode",
+  "1034":"Mark Entry on HUD",
+  "1035":"Scroll Ship Log Text",
+  "1036":"Doze Off",
+  "1037":"Fall Asleep",
+  "1038":"PS4",
+  "1039":"Xbox",
+  "1040":"Custom",
+  "1041":"Gamepad Preset",
+  "1042":"File Save Error",
+  "1043":"PS4 (Custom)",
+  "1044":"Dualshock (Custom)",
+  "1045":"Dualshock",
+  "1046":"Xbox (Custom)",
+  "1047":"Switch Pro",
+  "1048":"Switch Pro (Custom)",
+  "1049":"Axis #",
+  "1050":"Button #",
+  "1051":"Found recovered data for profile. Restore?",
+  "1052":"Overwrite existing data for profile?",
+  "1053":"Auto",
+  "1054":"Regular",
+  "1055":"Large",
+  "1100":"Gear Options",
+  "1101":"Gear Options",
+  "1102":"ERROR: SCOUT RECALL FAILED",
+  "1103":"FREEZE TIME WHILE READING",
+  "1104":"REBIND CONTROLS",
+  "1105":"CONTROL REBINDING",
+  "1106":"GAMEPAD",
+  "1107":"KEYBOARD & MOUSE",
+  "1108":"Delete Profile",
+  "1109":"Switch Profile",
+  "1110":"Select from pre-configured visual quality settings.",
+  "1111":"Whether the game should run as windowed or fullscreen.",
+  "1112":"Choose which monitor will display the game.",
+  "1113":"Determines which resolutions are available, based on the dimensions of the screen.",
+  "1114":"The game will render at this pixel resolution. Rendering cost: High",
+  "1115":"Smooths out jagged pixel edges. SMAA is more precise and higher quality, but FXAA is faster. Rendering cost: Low",
+  "1116":"Anti-aliasing quality",
+  "1117":"Texture map resolution",
+  "1118":"Ocean waves and water lighting quality",
+  "1119":"Shadow resolution and quality",
+  "1120":"Ambient occlusion",
+  "1121":"Adjust brightness",
+  "1122":"Prevent screen-tearing (VSync)",
+  "1123":"Dithering improves color blending",
+  "1124":"Vertical field-of-view",
+  "1125":"Jetpack boost can be triggered with a separate button press (manual) or any time upward thrust is used (auto).",
+  "1126":"Translator can be equipped with a button press (manual) or by looking at translatable text (auto).",
+  "1127":"HUD notification for ship log updates",
+  "1128":"Displays rumor connections between ship log entries. Disable to minimize in-game guidance.",
+  "1129":"Disabling this will remove the ability to automatically fly between planets using autopilot.",
+  "1130":"Display button prompts for available actions",
+  "1131":"Change volume for all audio",
+  "1132":"Change volume for non-diegetic music",
+  "1133":"Change the language for all text in the game",
+  "1134":"Change the reveal speed of text during conversation",
+  "1135":"Freeze time while reading translated text",
+  "1136":"Freeze time while using the ship log",
+  "1137":"Freeze time while talking to characters",
+  "1138":"Invert look y-axis when on foot",
+  "1139":"Invert look y-axis when piloting your ship",
+  "1140":"Enable controller vibration",
+  "1141":"Look input sensitivity while on foot",
+  "1142":"Look input sensitivity while piloting your ship",
+  "1143":"How far the stick must be tilted before any input is detected. Increase if character moves when not touching the stick.",
+  "1144":"How far the stick must be released before maximum input stops. Increase if unable to move at maximum speed.",
+  "1145":"Open this menu to modify which buttons are assigned to which in-game actions.",
+  "1150":"Throw Marshmallow",
+  "1151":"Push Off",
+  "1152":"Your save file was corrupted",
+  "1153":"Load previous save?",
+  "1154":"Select the controller the game will use",
+  "1155":"Change controller mapping",
+  "1156":"Change displayed button images",
+  "1157":"Change the Keyboard Layout setting",
+  "1158":"Pause the game",
+  "1159":"Menu Confirm",
+  "1160":"Menu Cancel",
+  "1161":"Movement from side to side",
+  "1162":"Movement forward and backwards",
+  "1163":"Camera movement left to right",
+  "1164":"Camera movement up and down",
+  "1165":"Interact with objects",
+  "1166":"Jump",
+  "1167":"Turns flashlight on and off",
+  "1168":"Opens Map View",
+  "1169":"Zoom in in map view",
+  "1170":"Zoom out in map view",
+  "1171":"Equips Signalscope",
+  "1172":"Equips, Launches, and Retrieves scout",
+  "1173":"Scout: forward / Signalscope: change view / Translator: translate",
+  "1174":"Scout: rear view snapshot",
+  "1175":"Generic tool mode left and right",
+  "1176":"Generic tool mode up and down",
+  "1177":"Jetpack and Ship upwards movement",
+  "1178":"Jetpack and Ship downwards movement",
+  "1179":"Roll about the forward direction",
+  "1180":"Triggers manual Jetpack Boost",
+  "1181":"Locks on to an indicated target",
+  "1182":"Match velocity of locked on target",
+  "1183":"Toggles the Ship landing camera",
+  "1184":"Activates ship autopilot when locked on",
+  "1185":"Toggles free look while buckled into cockpit",
+  "1186":"Toggle between map and discovery mode",
+  "1187":"Turn on HUD Marker for ship log item",
+  "1188":"Scroll through long log entries",
+  "1189":"Enable wireless controller vibration",
+  "1190":"Enable controller vibration",
+  "1191":"Controller dead zone (min)",
+  "1192":"Controller dead zone (max)",
+  "1193":"Select resolution and framerate",
+  "1194":"Auto: by Language and Platform. Regular/Large: manually locked",
+  "1200":"The Stranger",
+  "1201":"THE PRISONER",
+  "1210":"Artifact",
+  "1212":"Lantern",
+  "1213":"Slide Reel",
+  "1220":"Push Raft",
+  "1221":"Rotate",
+  "1222":"Use Interface",
+  "1223":"Release Raft",
+  "1224":"View Slideshow",
+  "1225":"Look",
+  "1226":"Rotate Up",
+  "1227":"Rotate Down",
+  "1228":"Rotate Up / Down",
+  "1229":"Open",
+  "1230":"Close",
+  "1231":"Give",
+  "1232":"Take",
+  "1233":"Vision Torch",
+  "1234":"Rotate Left / Right",
+  "1235":"Project",
+  "1236":"Project Vision",
+  "1237":"Rewatch Vision",
+  "1238":"Scan",
+  "1250":"ERROR: Unknown Language",
+  "1251":"ERROR: MAP OFFLINE",
+  "1260":"Focus",
+  "1261":"Conceal",
+  "1265":"Forward",
+  "1266":"Reverse",
+  "1300":"Return warp status: CHARGED",
+  "1310":"Set Default Controller",
+  "1311":"Do not show this again",
+  "1312":"Controller Profile",
+  "1313":"Button Prompt Images",
+  "1314":"(Auto Detect)",
+  "1315":"(Custom)",
+  "1316":"Unknown Input Detected",
+  "1317":"Joystick Axis",
+  "1318":"Designate Joystick Type",
+  "1319":"Normal [-1, 1]",
+  "1320":"Trigger [-1, 1]",
+  "1321":"Action",
+  "1322":"Retrieve Scout",
+  "1323":"Primary Tool Action",
+  "1324":"Secondary Tool Action",
+  "1325":"Launch/Retrieve Scout",
+  "1326":"V1.x.8 Key Binding Update",
+  "1327":"Old Key Bindings",
+  "1328":"New Key Bindings",
+  "1329":"Open Rebinding Menu",
+  "1330":"Continue",
+  "1331":"Save Changes?",
+  "1332":"Save Key Bindings",
+  "1333":"Discard Key Bindings",
+  "1334":"Keyboard Layout",
+  "1335":"Update Keyboard Bindings?",
+  "1336":"Convert Keys from",
+  "1337":"to",
+  "1338":"Layout",
+  "1339":"Keep Keys as-is",
+  "1400":"Next Tab",
+  "1401":"Reset Current Changes",
+  "1402":"Leave & Save Changes",
+  "1403":"Audio & Language",
+  "1404":"Controls",
+  "1405":"Basic",
+  "1406":"Active Controller",
+  "1407":"Advanced",
+  "1408":"Preflight Checklist",
+  "1409":"(unsupported)",
+  "1410":"Reduced Frights",
+  "1411":"Reduced Frights (Echoes of the Eye)",
+  "1412":"Makes certain frightening sequences easier",
+  "1413":"Frightening aspects of Echoes of the Eye - are you sure?",
+  "1414":"Frightening aspects of Outer Wilds - are you sure?",
+  "1420":"Jetpack Auto Boost",
+  "1421":"Translator Auto Equip",
+  "1422":"Freeze time while translating text",
+  "1423":"Freeze time while reading ship log",
+  "1424":"Freeze time while talking to others",
+  "1430":"Music-only Volume",
+  "1431":"Change volume for all music and sound effects",
+  "1440":"General",
+  "1441":"Movement",
+  "1442":"Equipment",
+  "1443":"Flight",
+  "1444":"Ship Log",
+  "1445":"Retrieve Scout",
+  "1446":"Primary Interact",
+  "1447":"Secondary Interact",
+  "1450":"SHIP FUEL DEPLETED",
+  "1451":"New Exhibit",
+  "1452":"Certain parts of Echoes of the Eye can be intense",
+  "1453":"Adjust the slider until the image is barely visible",
+  "1500":"- NEW EXHIBIT -",
+  "1501":"- COMING SOON -",
+  "1502":"Translator Auto Equip",
+  "1503":"AUDIO & LANGUAGE",
+  "1504":"CONTROLS",
+  "1505":"Water Quality",
+  "1506":"Ocean waves and water lighting detail",
+  "1507":"Lighting Effects Quality",
+  "1508":"Reflections and dark interiors",
+  "1509":"Reflections Quality",
+  "1510":"Reflections resolution",
+  "1511":"Leave & Save Changes",
+  "1512":"Default Settings (Gameplay)",
+  "1513":"Default Settings (Audio & Language)",
+  "1514":"Default Settings (Controls)",
+  "1515":"Default Settings (Graphics)",
+  "1520":"Thank you for supporting Outer Wilds Ventures!",
+  "1521":"Patch 8 (PS4 version",
+  "1522":") contains major input system updates",
+  "1523":"Patch 8 contains major input system updates",
+  "1530":"DEEP SPACE RADIO",
+  "1531":"RADIO TOWER",
+  "1532":"DEEP SPACE SATELLITE",
+  "1540":"Echoes of the Eye will become available - return to title screen?",
+  "1541":"Interact with objects (secondary interactions)",
+  "1542":"Scout: Launch/Forward / Signalscope: Zoom In / Translator: Translate",
+  "1543":"Scout: Rearview Snapshot",
+  "1544":"Change volume for sound effects",
+  "1545":"Change volume for sound effects",
+  "1550":"Would you like to reset your input settings?",
+  "1551":"Yes",
+  "1552":"No",
+  "1553":"Fullscreen",
+  "1554":"Windowed",
+  "1555":"Borderless Window",
+  "1556":"Keyboard Layout",
+  "1557":"Sets key bindings according to the selected keyboard layout",
+  "1558":"Switch Pro Controller (unsupported)",
+  "1559":"Switch Slideshow",
+  "1560":"Resume Expedition",
+  "1561":"Adjust the slider until barely visible",
+  "1562":"Apply",
+  "1563":"Cancel",
+  "1564":"Gamma",
+  "1565":"Next",
+  "1566":"Previous",
+  "1570":"Vibration Function"
+};
+
+// ── FILE LOADING ──────────────────────────────────────────────────────────
+document.getElementById('fin').addEventListener('change', e => readXML(e.target.files[0]));
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  const f = [...e.dataTransfer.files][0];
+  if (!f) return;
+  f.name.endsWith('.xml') ? readXML(f) : readJSON(f);
+});
+document.getElementById('dz').addEventListener('dragover', e => { e.preventDefault(); e.currentTarget.classList.add('over'); });
+document.getElementById('dz').addEventListener('dragleave', e => e.currentTarget.classList.remove('over'));
+
+function readXML(file) {
+  const r = new FileReader();
+  r.onload = e => parseXML(e.target.result);
+  r.readAsText(file, 'UTF-8');
+}
+
+function parseXML(xml) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xml, 'application/xml');
+
+  // DIALOGUE: key=English, value=Arabic (or English if untranslated)
+  data.dialogue = [...doc.querySelectorAll('TranslationTable_XML > entry')].map((n,i) => {
+    const k = n.querySelector('key')?.textContent?.trim() || '';
+    const v = n.querySelector('value')?.textContent?.trim() || '';
+    return { idx:i, section:'dialogue', english:k, translation: (v && v!==k) ? v : '' };
+  }).filter(e => e.english);
+
+  // SHIP LOG: key=English, value=Arabic
+  const sl = doc.querySelector('table_shipLog');
+  if (sl) {
+    data.shipLog = [...sl.querySelectorAll('TranslationTableEntry')].map((n,i) => {
+      const k = n.querySelector('key')?.textContent?.trim() || '';
+      const v = n.querySelector('value')?.textContent?.trim() || '';
+      return { idx:i, section:'shipLog', english:k, translation: (v && v!==k) ? v : '' };
+    }).filter(e => e.english);
+  }
+
+  // UI: key=number, value=Arabic — show english meaning from lookup
+  const ui = doc.querySelector('table_ui');
+  if (ui) {
+    data.ui = [...ui.querySelectorAll('TranslationTableEntryUI')].map((n,i) => {
+      const k = n.querySelector('key')?.textContent?.trim() || '';
+      const v = n.querySelector('value')?.textContent?.trim() || '';
+      const eng = uiMeanings[k] || `[UI #${k}]`;
+      return { idx:i, section:'ui', english:eng, translation:v, uiKey:k };
+    }).filter(e => e.uiKey);
+  }
+
+  launch();
+}
+
+function launch() {
+  document.getElementById('drop').style.display = 'none';
+  updateCounts();
+  updateStats();
+  refreshList();
+  // start on first untranslated
+  const first = data[section].findIndex(e => !e.translation.trim());
+  if (first !== -1) select(section, first);
+  else if (data[section].length > 0) select(section, 0);
+}
+
+// ── SECTIONS ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.stab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.stab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  section = t.dataset.s;
+  search = '';
+  document.getElementById('searchInput').value = '';
+  refreshList();
+}));
+
+function updateCounts() {
+  ['dialogue','shipLog','ui'].forEach(s => {
+    document.getElementById(`c-${s}`).textContent = data[s].length;
+  });
+}
+
+// ── LIST ─────────────────────────────────────────────────────────────────
+function getFiltered() {
+  return (data[section]||[]).filter(e => {
+    const mf = filter==='all'
+      || (filter==='done'    &&  e.translation.trim())
+      || (filter==='pending' && !e.translation.trim());
+    const q = search.toLowerCase();
+    const ms = !q || e.english.toLowerCase().includes(q) || e.translation.toLowerCase().includes(q);
+    return mf && ms;
+  });
+}
+
+function refreshList() {
+  const el = document.getElementById('list');
+  const filtered = getFiltered();
+  const done = filtered.filter(e => e.translation.trim()).length;
+  document.getElementById('fstats').textContent = `${done}/${filtered.length}`;
+
+  if (!filtered.length) { el.innerHTML='<div class="empty">No entries found.</div>'; return; }
+
+  el.innerHTML = '';
+  filtered.forEach(entry => {
+    const isDone = !!entry.translation.trim();
+    const isSel  = selKey && selKey.section===entry.section && selKey.idx===entry.idx;
+    const row = document.createElement('div');
+    row.className = `row${isDone?' done':''}${isSel?' sel':''}`;
+    row.dataset.section = entry.section;
+    row.dataset.idx = entry.idx;
+    const enShort = entry.english.replace(/<[^>]+>/g,'').substring(0,60);
+    row.innerHTML = `
+      <div class="row-num">#${entry.idx+1}</div>
+      <div class="row-body">
+        <div class="row-en">${escH(enShort)}${entry.english.length>60?'…':''}</div>
+        ${isDone?`<div class="row-ar">${escH(entry.translation.substring(0,50))}</div>`:''}
+      </div>
+      <div class="badge ${isDone?'bdone':'bpend'}">${isDone?'✓':'…'}</div>
+    `;
+    row.addEventListener('click', () => select(entry.section, entry.idx));
+    el.appendChild(row);
+  });
+}
+
+// ── SELECT / EDITOR ───────────────────────────────────────────────────────
+function select(sec, idx) {
+  saveCurrent();
+  selKey = { section:sec, idx };
+  const entry = data[sec][idx];
+
+  document.querySelectorAll('.row').forEach(r => {
+    r.classList.toggle('sel', r.dataset.section===sec && parseInt(r.dataset.idx)===idx);
+  });
+  const sel = document.querySelector(`.row[data-section="${sec}"][data-idx="${idx}"]`);
+  if (sel) sel.scrollIntoView({ block:'nearest' });
+
+  // Build side-by-side compare view
+  document.getElementById('nosel').style.display = 'none';
+  const compare = document.getElementById('compare');
+  compare.style.display = 'flex';
+  document.getElementById('infobar').style.display = 'flex';
+  document.getElementById('footer').style.display = 'flex';
+
+  const badges = { dialogue:'💬 Dialogue', shipLog:'🚀 Ship Log', ui:'🖥️ UI' };
+  document.getElementById('section-badge').textContent = badges[sec] || sec;
+
+  const filtered = getFiltered();
+  const pos = filtered.findIndex(e => e.section===sec && e.idx===idx);
+  document.getElementById('entrynum').textContent = `#${idx+1} of ${data[sec].length}`;
+  document.getElementById('counter').textContent = `${pos+1}/${filtered.length} shown`;
+
+  // Split English into lines for sentence-by-sentence display
+  const enLines = entry.english.split('\n').filter(l => l.trim());
+  const arLines = entry.translation ? entry.translation.split('\n') : [];
+
+  compare.innerHTML = '';
+
+  if (enLines.length <= 1) {
+    // Single block — side by side
+    const div = document.createElement('div');
+    div.className = 'compare-row';
+    div.innerHTML = `
+      <div class="col-en">
+        <div class="col-label"><span class="badge2 lbl-en">English</span></div>
+        <div class="en-text">${highlightTags(escH(entry.english))}</div>
+      </div>
+      <div class="col-ar">
+        <div class="col-label"><span class="badge2 lbl-ar">العربية</span></div>
+        <textarea class="ar-textarea" id="ar-main" placeholder="اكتب الترجمة هنا...">${escH(entry.translation)}</textarea>
+      </div>
+    `;
+    compare.appendChild(div);
+    setTimeout(() => {
+      const ta = document.getElementById('ar-main');
+      if (ta) { autoResize(ta); ta.focus(); }
+    }, 30);
+  } else {
+    // Multi-line — stacked rows
+    const header = document.createElement('div');
+    header.className = 'compare-row';
+    header.innerHTML = `
+      <div class="col-en" style="border-radius:8px 0 0 0"><div class="col-label"><span class="badge2 lbl-en">English</span></div></div>
+      <div class="col-ar" style="border-radius:0 8px 0 0"><div class="col-label"><span class="badge2 lbl-ar">العربية</span></div></div>
+    `;
+    compare.appendChild(header);
+
+    enLines.forEach((line, i) => {
+      const arLine = arLines[i] || '';
+      const div = document.createElement('div');
+      div.className = 'compare-row';
+      div.innerHTML = `
+        <div class="col-en"><div class="en-text">${highlightTags(escH(line))}</div></div>
+        <div class="col-ar"><textarea class="ar-textarea ar-line" data-line="${i}" placeholder="...">${escH(arLine)}</textarea></div>
+      `;
+      compare.appendChild(div);
+    });
+
+    // Auto resize all textareas
+    setTimeout(() => {
+      compare.querySelectorAll('.ar-textarea').forEach(ta => autoResize(ta));
+      const first = compare.querySelector('.ar-textarea');
+      if (first) first.focus();
+    }, 30);
+  }
+
+  // Listen for input on textareas
+  compare.querySelectorAll('.ar-textarea').forEach(ta => {
+    ta.addEventListener('input', () => autoResize(ta));
+    ta.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key==='Enter') { e.preventDefault(); saveAndNext(); }
+    });
+  });
+
+  updateStats();
+}
+
+function autoResize(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.max(60, ta.scrollHeight) + 'px';
+}
+
+function getEditorValue() {
+  const compare = document.getElementById('compare');
+  const main = compare.querySelector('#ar-main');
+  if (main) return main.value;
+  // Multi-line
+  const lines = [...compare.querySelectorAll('.ar-line')].map(ta => ta.value);
+  return lines.join('\n');
+}
+
+// ── SAVE ─────────────────────────────────────────────────────────────────
+function saveCurrent() {
+  if (!selKey) return;
+  const val = getEditorValue();
+  data[selKey.section][selKey.idx].translation = val;
+  refreshList();
+  updateStats();
+}
+
+function saveAndNext() {
+  saveCurrent();
+  toast('✓ Saved');
+  const entries = data[section];
+  let next = null;
+  for (let i = selKey.idx+1; i<entries.length; i++) {
+    if (!entries[i].translation.trim()) { next=entries[i]; break; }
+  }
+  if (!next) {
+    const filtered = getFiltered();
+    const pos = filtered.findIndex(e => e.section===selKey.section && e.idx===selKey.idx);
+    if (pos < filtered.length-1) next = filtered[pos+1];
+  }
+  if (next) select(next.section, next.idx);
+}
+
+document.getElementById('nextBtn').addEventListener('click', saveAndNext);
+document.getElementById('prevBtn').addEventListener('click', () => {
+  saveCurrent();
+  const filtered = getFiltered();
+  const pos = filtered.findIndex(e => e.section===selKey.section && e.idx===selKey.idx);
+  if (pos>0) select(filtered[pos-1].section, filtered[pos-1].idx);
+});
+
+// ── STATS ─────────────────────────────────────────────────────────────────
+function updateStats() {
+  const all = [...data.dialogue, ...data.shipLog, ...data.ui];
+  const done = all.filter(e => e.translation.trim()).length;
+  document.getElementById('doneN').textContent = done;
+  document.getElementById('totalN').textContent = all.length;
+}
+
+// ── SAVE XML ─────────────────────────────────────────────────────────────
+document.getElementById('saveXml').addEventListener('click', () => {
+  saveCurrent();
+  let xml = `<?xml version="1.0" encoding="utf-8"?>\n<TranslationTable_XML xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n`;
+  data.dialogue.forEach(e => {
+    const v = e.translation.trim() || e.english;
+    xml += `\t<entry>\n\t\t<key>${escX(e.english)}</key>\n\t\t<value>${escX(v)}</value>\n\t</entry>\n`;
+  });
+  if (data.shipLog.length) {
+    xml += `\t<table_shipLog>\n`;
+    data.shipLog.forEach(e => {
+      const v = e.translation.trim() || e.english;
+      xml += `\t\t<TranslationTableEntry>\n\t\t\t<key>${escX(e.english)}</key>\n\t\t\t<value>${escX(v)}</value>\n\t\t</TranslationTableEntry>\n`;
+    });
+    xml += `\t</table_shipLog>\n`;
+  }
+  if (data.ui.length) {
+    xml += `\t<table_ui>\n`;
+    data.ui.forEach(e => {
+      const v = e.translation.trim() || e.english;
+      xml += `\t\t<TranslationTableEntryUI>\n\t\t\t<key>${escX(e.uiKey)}</key>\n\t\t\t<value>${escX(v)}</value>\n\t\t</TranslationTableEntryUI>\n`;
+    });
+    xml += `\t</table_ui>\n`;
+  }
+  xml += `</TranslationTable_XML>`;
+  dl('Translation_Arabic.xml', xml, 'text/xml');
+  toast('💾 XML saved!');
+});
+
+// ── SAVE/LOAD JSON ────────────────────────────────────────────────────────
+document.getElementById('saveJson').addEventListener('click', () => {
+  saveCurrent();
+  const save = {
+    dialogue: data.dialogue.map(e => ({ english:e.english, translation:e.translation })),
+    shipLog:  data.shipLog.map(e  => ({ english:e.english, translation:e.translation })),
+    ui:       data.ui.map(e       => ({ uiKey:e.uiKey, english:e.english, translation:e.translation })),
+  };
+  dl('ow_arabic_progress.json', JSON.stringify(save, null, 2), 'application/json');
+  toast('📋 Progress saved!');
+});
+
+document.getElementById('loadJson').addEventListener('click', () => document.getElementById('pjson').click());
+document.getElementById('pjson').addEventListener('change', e => readJSON(e.target.files[0]));
+
+function readJSON(file) {
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const save = JSON.parse(ev.target.result);
+      if (save.dialogue) save.dialogue.forEach(d => {
+        const e = data.dialogue.find(x => x.english===d.english);
+        if (e) e.translation = d.translation||'';
+      });
+      if (save.shipLog) save.shipLog.forEach(d => {
+        const e = data.shipLog.find(x => x.english===d.english);
+        if (e) e.translation = d.translation||'';
+      });
+      if (save.ui) save.ui.forEach(d => {
+        const e = data.ui.find(x => x.uiKey===d.uiKey);
+        if (e) e.translation = d.translation||'';
+      });
+      refreshList(); updateStats();
+      toast('📂 Progress loaded!');
+    } catch { toast('❌ Could not read file'); }
+  };
+  r.readAsText(file);
+}
+
+// ── FILTERS & SEARCH ─────────────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input', e => { search=e.target.value; refreshList(); });
+document.querySelectorAll('.ftab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.ftab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  filter = t.dataset.f;
+  refreshList();
+}));
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function escH(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escX(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;'); }
+function highlightTags(s) { return s.replace(/(&lt;[^&]*&gt;)/g,'<span class="ctag">$1</span>'); }
+function dl(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content],{type}));
+  a.download = name; a.click();
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 2000);
+}
+</script>
+</body>
+</html>

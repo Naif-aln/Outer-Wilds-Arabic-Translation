@@ -1,0 +1,17 @@
+* text=auto
+*.cs text
+*.py text
+*.md text
+*.xml text
+*.json text
+*.yml text
+*.html text
+*.csproj text
+*.sln text
+
+arabicfont binary
+*.gif binary
+*.ico binary
+*.png binary
+*.dll binary
+*.exe binary
