@@ -43,11 +43,33 @@ jobs:
             installer/dist/arabic.OWArabicTranslation.zip
             installer/dist/SHA256SUMS.txt
 
+      - name: Write release notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          {
+            echo "Built by GitHub Actions from commit \`${GITHUB_SHA}\` in [run ${GITHUB_RUN_ID}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})."
+            echo
+            echo "## Install"
+            echo
+            echo "- **One click:** download \`OWArabicTranslation_Installer.exe\` and run it."
+            echo "- **Manual, no exe:** download \`arabic.OWArabicTranslation.zip\` and add it in the Outer Wilds Mod Manager with *Install from zip*. Needs Interplanetary Polyglot. See [docs/manual-install.md](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/docs/manual-install.md)."
+            echo
+            echo "## SHA-256"
+            echo
+            echo '```'
+            cat installer/dist/SHA256SUMS.txt
+            echo '```'
+            echo
+            echo "Full details in [CHANGELOG.md](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md)."
+          } > installer/dist/RELEASE_NOTES.md
+          cat installer/dist/RELEASE_NOTES.md
+
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: installer/dist/RELEASE_NOTES.md
           files: |
             installer/dist/OWArabicTranslation_Installer.exe
             installer/dist/arabic.OWArabicTranslation.zip
